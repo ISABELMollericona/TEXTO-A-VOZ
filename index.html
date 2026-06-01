@@ -6,43 +6,66 @@
 <title>Texto a Voz</title>
 
 <style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
 body{
-    font-family: Arial, sans-serif;
+    font-family:Arial,sans-serif;
     background:#f5f5f5;
     padding:20px;
+}
+
+.container{
+    max-width:700px;
+    margin:auto;
 }
 
 textarea{
     width:100%;
     height:250px;
+    padding:15px;
     font-size:18px;
-    padding:10px;
-    box-sizing:border-box;
-    border-radius:10px;
     border:1px solid #ccc;
+    border-radius:12px;
+    resize:none;
 }
 
-.play{
-    width:80px;
-    height:80px;
+.play-btn{
+    width:90px;
+    height:90px;
     border:none;
     border-radius:50%;
-    font-size:35px;
+    font-size:40px;
     cursor:pointer;
     display:block;
     margin:20px auto;
 }
 
-.play:active{
+.play-btn:active{
     transform:scale(0.95);
+}
+
+.estado{
+    text-align:center;
+    margin-top:10px;
+    font-size:15px;
 }
 </style>
 </head>
 <body>
 
-<textarea id="texto" placeholder="Escribe aquí..."></textarea>
+<div class="container">
 
-<button class="play" onclick="hablar()">▶</button>
+    <textarea id="texto" placeholder="Escribe aquí el texto que deseas escuchar..."></textarea>
+
+    <button class="play-btn" onclick="hablar()">▶</button>
+
+    <div class="estado" id="estado"></div>
+
+</div>
 
 <script>
 
@@ -54,49 +77,79 @@ function cargarVoces() {
 
 speechSynthesis.onvoiceschanged = cargarVoces;
 
-function obtenerVoz() {
+setTimeout(cargarVoces, 1000);
 
-    const candidatos = [
-        "male",
+function buscarVozMasculina() {
+
+    const nombresMasculinos = [
         "jorge",
         "alvaro",
         "pablo",
         "raul",
-        "mateo"
+        "mateo",
+        "diego",
+        "carlos",
+        "male"
     ];
 
     for (let voz of voces) {
-        const nombre = voz.name.toLowerCase();
 
-        for (let candidato of candidatos) {
-            if (nombre.includes(candidato)) {
+        let nombre = voz.name.toLowerCase();
+
+        for (let masculino of nombresMasculinos) {
+
+            if (nombre.includes(masculino)) {
                 return voz;
             }
         }
     }
 
-    return voces.find(v => v.lang.startsWith("es")) || null;
+    return null;
 }
 
 function hablar() {
 
-    const texto = document.getElementById("texto").value.trim();
+    let texto = document.getElementById("texto").value.trim();
 
-    if (!texto) return;
+    if (texto === "") {
+        return;
+    }
 
     speechSynthesis.cancel();
 
-    const mensaje = new SpeechSynthesisUtterance(texto);
+    let mensaje = new SpeechSynthesisUtterance(texto);
 
-    const voz = obtenerVoz();
+    let vozMasculina = buscarVozMasculina();
 
-    if (voz) {
-        mensaje.voice = voz;
+    if (vozMasculina) {
+
+        mensaje.voice = vozMasculina;
+
+        document.getElementById("estado").innerHTML =
+            "Voz utilizada: " + vozMasculina.name;
+
+    } else {
+
+        let vozEspanol = voces.find(v =>
+            v.lang.toLowerCase().startsWith("es")
+        );
+
+        if (vozEspanol) {
+            mensaje.voice = vozEspanol;
+        }
+
+        document.getElementById("estado").innerHTML =
+            "No se encontró una voz masculina instalada. Android usará la voz española disponible.";
     }
 
     mensaje.lang = "es-ES";
-    mensaje.rate = 0.8;
+
+    // Velocidad normal
+    mensaje.rate = 0.75;
+
+    // Tono grave
     mensaje.pitch = 0.7;
+
     mensaje.volume = 1;
 
     speechSynthesis.speak(mensaje);
